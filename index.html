@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Expenses Tracker 💸</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  /* ====== GENERAL STYLES ====== */
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    background: linear-gradient(135deg, #0a1930, #0f3057);
+    font-family: 'Poppins', sans-serif;
+    color: #e0e0e0;
+    line-height: 1.6;
+    padding: 20px;
+  }
+
+  .container {
+    max-width: 800px;
+    margin: 30px auto;
+    background: rgba(255, 255, 255, 0.08);
+    padding: 25px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  h1 {
+    text-align: center;
+    color: #00fff0;
+    margin-bottom: 25px;
+    font-size: 2.2rem;
+    text-shadow: 0 0 10px rgba(0, 255, 240, 0.3);
+  }
+
+  .input-group {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  input {
+    flex: 1;
+    min-width: 150px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    border: none;
+    outline: none;
+    background-color: rgba(20, 40, 80, 0.7);
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+  }
+
+  input:focus {
+    background-color: rgba(20, 40, 80, 0.9);
+    box-shadow: 0 0 0 2px rgba(0, 255, 240, 0.5);
+  }
+
+  input::placeholder {
+    color: #aaa;
+  }
+
+  button {
+    background: linear-gradient(45deg, #00fff0, #00d4ff);
+    border: none;
+    color: #0a1930;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  button:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(45deg, #00d4ff, #00fff0);
+    box-shadow: 0 5px 15px rgba(0, 255, 240, 0.3);
+  }
+
+  .expense-list, .result, .transactions, .chart-container {
+    margin-top: 25px;
+    background-color: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .expense-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding: 12px 0;
+    transition: all 0.3s ease;
+    border-left: 4px solid transparent;
+  }
+
+  .expense-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    padding-left: 10px;
+    border-radius: 8px;
+  }
+
+  .expense-item:last-child {
+    border-bottom: none;
+  }
+
+  .expense-name {
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .person-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .expense-description {
+    font-size: 0.85rem;
+    color: #aaa;
+    margin-top: 4px;
+  }
+
+  .expense-amount {
+    font-weight: bold;
+    color: #ffd700;
+  }
+
+  .clear-btn {
+    background: linear-gradient(45deg, #ff416c, #ff4b2b);
+    margin-top: 20px;
+    width: 100%;
+  }
+
+  .clear-btn:hover {
+    background: linear-gradient(45deg, #ff4b2b, #ff416c);
+  }
+
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+  }
+
+  .summary-item.receive {
+    color: #4caf50;
+  }
+
+  .summary-item.pay {
+    color: #ff5252;
+  }
+
+  .summary-item.settled {
+    color: #ffd700;
+  }
+
+  .notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    background: rgba(76, 175, 80, 0.9);
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transform: translateX(150%);
+    transition: transform 0.3s ease;
+    z-index: 1000;
+  }
+
+  .notification.show {
+    transform: translateX(0);
+  }
+
+  .notification.error {
+    background: rgba(244, 67, 54, 0.9);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 30px;
+    color: #aaa;
+  }
+
+  .empty-state i {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    color: rgba(255, 255, 255, 0.2);
+  }
+
+  .stats-container {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 15px;
+  }
+
+  .stat-card {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .stat-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #00fff0;
+  }
+
+  .stat-label {
+    font-size: 0.9rem;
+    color: #aaa;
+  }
+
+  .transaction-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .transaction-item:last-child {
+    border-bottom: none;
+  }
+
+  .transaction-from {
+    color: #ff5252;
+  }
+
+  .transaction-to {
+    color: #4caf50;
+  }
+
+  .transaction-arrow {
+    margin: 0 10px;
+    color: #aaa;
+  }
+
+  .transaction-amount {
+    font-weight: bold;
+    color: #ffd700;
+  }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    color: #00fff0;
+  }
+
+  /* Chart styles */
+  .chart-container {
+    height: 300px;
+    position: relative;
+    width: 100%;
+  }
+
+  .chart-wrapper {
+    position: relative;
+    height: 100%;
+    width: 100%;
+  }
+
+  /* ====== RESPONSIVE STYLES ====== */
+  @media (max-width: 768px) {
+    .container {
+      padding: 20px;
+      margin: 20px auto;
+    }
+    
+    h1 {
+      font-size: 1.8rem;
+    }
+    
+    .stats-container {
+      flex-direction: column;
+    }
+    
+    .expense-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    
+    .expense-item .actions {
+      align-self: flex-end;
+    }
+    
+    .transaction-item {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    
+    .transaction-arrow {
+      align-self: center;
+      margin: 5px 0;
+    }
+    
+    .chart-container {
+      height: 250px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .input-group {
+      flex-direction: column;
+    }
+    
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h1><i class="fas fa-money-bill-wave"></i> Expenses Tracker 💸</h1>
+
+  <div class="input-group">
+    <input type="text" id="name" placeholder="Enter Name" autocomplete="off">
+    <input type="number" id="amount" placeholder="Enter Amount (₱)" min="0" step="0.01">
+    <input type="text" id="description" placeholder="Description (e.g., Food, Transport)" autocomplete="off">
+    <button onclick="addExpense()">
+      <i class="fas fa-plus"></i> Add
+    </button>
+  </div>
+
+  <div class="stats-container" id="statsContainer" style="display: none;">
+    <div class="stat-card">
+      <div class="stat-value" id="totalPeople">0</div>
+      <div class="stat-label">People</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="totalAmount">₱0.00</div>
+      <div class="stat-label">Total</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-value" id="averageAmount">₱0.00</div>
+      <div class="stat-label">Average</div>
+    </div>
+  </div>
+
+  <div class="expense-list" id="expenseList">
+    <div class="empty-state">
+      <i class="fas fa-receipt"></i>
+      <p>No expenses added yet.</p>
+    </div>
+  </div>
+
+  <div class="chart-container" id="chartContainer" style="display: none;">
+    <div class="section-title">
+      <i class="fas fa-chart-pie"></i>
+      <h3>Expense Distribution</h3>
+    </div>
+    <div class="chart-wrapper">
+      <canvas id="expenseChart"></canvas>
+    </div>
+  </div>
+  
+  <div class="result" id="result"></div>
+  
+  <div class="transactions" id="transactions" style="display: none;">
+    <div class="section-title">
+      <i class="fas fa-exchange-alt"></i>
+      <h3>Settlement Transactions</h3>
+    </div>
+    <div id="transactionsList"></div>
+  </div>
+  
+  <button class="clear-btn" onclick="resetAll()">
+    <i class="fas fa-trash-alt"></i> Reset All
+  </button>
+</div>
+
+<div class="notification" id="notification"></div>
+
+<script>
+  let expenses = []; // Array of individual expense items
+  let editingIndex = null;
+  let expenseChart = null;
+  let personColors = {};
+  let nameCaseMap = {}; // Maps normalized names to their original case
+
+  // Function to normalize name for case insensitivity
+  function normalizeName(name) {
+    return name.trim().toLowerCase();
+  }
+
+  // Function to get the original case of a name
+  function getOriginalName(normalizedName) {
+    return nameCaseMap[normalizedName] || normalizedName;
+  }
+
+  // Function to generate a consistent color for a person
+  function getPersonColor(name) {
+    const normalizedName = normalizeName(name);
+    if (!personColors[normalizedName]) {
+      // Simple hash function to generate a color from the name
+      let hash = 0;
+      for (let i = 0; i < normalizedName.length; i++) {
+        hash = normalizedName.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      
+      // Convert hash to hex color
+      let color = '#';
+      for (let i = 0; i < 3; i++) {
+        const value = (hash >> (i * 8)) & 0xFF;
+        color += ('00' + value.toString(16)).substr(-2);
+      }
+      
+      personColors[normalizedName] = color;
+    }
+    return personColors[normalizedName];
+  }
+
+  // Function to show notification
+  function showNotification(message, isError = false) {
+    const notification = document.getElementById('notification');
+    notification.textContent = message;
+    notification.className = 'notification show' + (isError ? ' error' : '');
+    
+    setTimeout(() => {
+      notification.className = 'notification';
+    }, 3000);
+  }
+
+  // Function to add or update expense
+  function addExpense() {
+    const name = document.getElementById('name').value.trim();
+    const amount = parseFloat(document.getElementById('amount').value);
+    const description = document.getElementById('description').value.trim();
+
+    if (!name) {
+      showNotification('Please enter a valid name.', true);
+      document.getElementById('name').focus();
+      return;
+    }
+
+    if (isNaN(amount) || amount <= 0) {
+      showNotification('Please enter a valid amount greater than 0.', true);
+      document.getElementById('amount').focus();
+      return;
+    }
+
+    if (!description) {
+      showNotification('Please enter a description for the expense.', true);
+      document.getElementById('description').focus();
+      return;
+    }
+
+    // Store the original case of the name
+    const normalizedName = normalizeName(name);
+    if (!nameCaseMap[normalizedName]) {
+      nameCaseMap[normalizedName] = name;
+    }
+
+    if (editingIndex !== null) {
+      // Update existing expense
+      expenses[editingIndex] = { name, amount, description };
+      editingIndex = null;
+      document.querySelector('.input-group button').innerHTML = '<i class="fas fa-plus"></i> Add';
+      showNotification('Expense updated successfully!');
+    } else {
+      // Add new expense
+      expenses.push({ name, amount, description });
+      showNotification('Expense added successfully!');
+    }
+
+    document.getElementById('name').value = '';
+    document.getElementById('amount').value = '';
+    document.getElementById('description').value = '';
+    document.getElementById('name').focus();
+    updateDisplay();
+  }
+
+  // Function to edit expense
+  function editExpense(index) {
+    const expense = expenses[index];
+    document.getElementById('name').value = expense.name;
+    document.getElementById('amount').value = expense.amount;
+    document.getElementById('description').value = expense.description;
+    editingIndex = index;
+    document.querySelector('.input-group button').innerHTML = '<i class="fas fa-save"></i> Update';
+    document.getElementById('name').focus();
+  }
+
+  // Function to calculate settlement transactions
+  function calculateTransactions(balances) {
+    const transactions = [];
+    
+    // Separate people who owe money and those who should receive money
+    const debtors = [];
+    const creditors = [];
+    
+    for (const person in balances) {
+      if (balances[person] < 0) {
+        debtors.push({ name: person, amount: Math.abs(balances[person]) });
+      } else if (balances[person] > 0) {
+        creditors.push({ name: person, amount: balances[person] });
+      }
+    }
+    
+    // Sort debtors and creditors by amount (descending)
+    debtors.sort((a, b) => b.amount - a.amount);
+    creditors.sort((a, b) => b.amount - a.amount);
+    
+    // Match debtors with creditors
+    let i = 0, j = 0;
+    while (i < debtors.length && j < creditors.length) {
+      const debtor = debtors[i];
+      const creditor = creditors[j];
+      
+      const amount = Math.min(debtor.amount, creditor.amount);
+      
+      if (amount > 0) {
+        transactions.push({
+          from: debtor.name,
+          to: creditor.name,
+          amount: amount
+        });
+        
+        debtor.amount -= amount;
+        creditor.amount -= amount;
+        
+        if (debtor.amount === 0) i++;
+        if (creditor.amount === 0) j++;
+      }
+    }
+    
+    return transactions;
+  }
+
+  // Function to update or create the expense chart
+  function updateChart() {
+    const chartContainer = document.getElementById('chartContainer');
+    const ctx = document.getElementById('expenseChart').getContext('2d');
+    
+    // Calculate total expenses per person (case insensitive)
+    const personTotals = {};
+    expenses.forEach(e => {
+      const normalizedName = normalizeName(e.name);
+      personTotals[normalizedName] = (personTotals[normalizedName] || 0) + e.amount;
+    });
+    
+    const people = Object.keys(personTotals);
+    
+    if (people.length === 0) {
+      chartContainer.style.display = 'none';
+      // Destroy existing chart if it exists
+      if (expenseChart) {
+        expenseChart.destroy();
+        expenseChart = null;
+      }
+      return;
+    }
+    
+    chartContainer.style.display = 'block';
+    
+    // Prepare data for the chart
+    const labels = people.map(name => getOriginalName(name));
+    const data = people.map(name => personTotals[name]);
+    const backgroundColors = people.map(name => getPersonColor(name));
+    
+    // Destroy existing chart if it exists to create a fresh one
+    if (expenseChart) {
+      expenseChart.destroy();
+      expenseChart = null;
+    }
+    
+    // Create new chart
+    expenseChart = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: labels,
+        datasets: [{
+          data: data,
+          backgroundColor: backgroundColors,
+          borderColor: 'rgba(255, 255, 255, 0.2)',
+          borderWidth: 1,
+          radius: '70%' // This makes the pie chart smaller
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: {
+          padding: {
+            left: 20,
+            right: 100,
+            top: 0,
+            bottom: 0
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'right',
+            labels: {
+              color: '#e0e0e0',
+              font: {
+                size: 12
+              },
+              generateLabels: function(chart) {
+                const data = chart.data;
+                if (data.labels.length && data.datasets.length) {
+                  return data.labels.map((label, i) => {
+                    const dataset = data.datasets[0];
+                    const value = dataset.data[i];
+                    const total = dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = Math.round((value / total) * 100);
+                    
+                    return {
+                      text: `${label}: ₱${value.toFixed(2)} (${percentage}%)`,
+                      fillStyle: dataset.backgroundColor[i],
+                      hidden: false,
+                      index: i
+                    };
+                  });
+                }
+                return [];
+              }
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = `₱${context.raw.toFixed(2)}`;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = Math.round((context.raw / total) * 100);
+                return `${label}: ${value} (${percentage}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Display expenses and results
+  function updateDisplay() {
+    const expenseList = document.getElementById('expenseList');
+    const resultDiv = document.getElementById('result');
+    const transactionsDiv = document.getElementById('transactions');
+    const transactionsList = document.getElementById('transactionsList');
+    const statsContainer = document.getElementById('statsContainer');
+
+    // Show or hide stats container
+    if (expenses.length > 0) {
+      statsContainer.style.display = 'flex';
+    } else {
+      statsContainer.style.display = 'none';
+    }
+
+    // Show list of expenses
+    if (expenses.length === 0) {
+      expenseList.innerHTML = `
+        <div class="empty-state">
+          <i class="fas fa-receipt"></i>
+          <p>No expenses added yet.</p>
+        </div>`;
+      resultDiv.innerHTML = "";
+      transactionsDiv.style.display = 'none';
+      updateChart();
+      return;
+    }
+
+    let listHTML = "<h3><i class=\"fas fa-list\"></i> Expenses:</h3>";
+    expenses.forEach((e, i) => {
+      const personColor = getPersonColor(e.name);
+      listHTML += `
+        <div class="expense-item" style="border-left-color: ${personColor};">
+          <div>
+            <div class="expense-name">
+              <span class="person-color" style="background-color: ${personColor};"></span>
+              ${e.name}
+            </div>
+            <div class="expense-description">${e.description}</div>
+            <div class="expense-amount">₱${e.amount.toFixed(2)}</div>
+          </div>
+          <div class="actions">
+            <button onclick="editExpense(${i})" style="background: #4CAF50; padding: 6px 10px; margin-right: 5px;">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button onclick="deleteExpense(${i})" style="background: #f44336; padding: 6px 10px;">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+        </div>`;
+    });
+    expenseList.innerHTML = listHTML;
+
+    // Calculate total expenses per person (case insensitive)
+    const personTotals = {};
+    expenses.forEach(e => {
+      const normalizedName = normalizeName(e.name);
+      personTotals[normalizedName] = (personTotals[normalizedName] || 0) + e.amount;
+    });
+
+    // Compute total and shares
+    const total = Object.values(personTotals).reduce((sum, amount) => sum + amount, 0);
+    const peopleCount = Object.keys(personTotals).length;
+    const share = total / peopleCount;
+
+    // Update stats
+    document.getElementById('totalPeople').textContent = peopleCount;
+    document.getElementById('totalAmount').textContent = `₱${total.toFixed(2)}`;
+    document.getElementById('averageAmount').textContent = `₱${share.toFixed(2)}`;
+
+    // Calculate net balance (amount paid - share)
+    const netBalances = {};
+    for (const normalizedName in personTotals) {
+      const originalName = getOriginalName(normalizedName);
+      netBalances[originalName] = personTotals[normalizedName] - share;
+    }
+
+    let resultHTML = `
+      <div class="section-title">
+        <i class="fas fa-calculator"></i>
+        <h3>Settlement Summary</h3>
+      </div>
+      <div class="summary-item">
+        <span>Total Expenses:</span>
+        <span><strong>₱${total.toFixed(2)}</strong></span>
+      </div>
+      <div class="summary-item">
+        <span>Each Should Pay:</span>
+        <span><strong>₱${share.toFixed(2)}</strong></span>
+      </div>
+      <hr style="margin: 15px 0; border: none; border-top: 1px solid rgba(255,255,255,0.1);">`;
+
+    for (const originalName in netBalances) {
+      const balance = netBalances[originalName];
+      if (balance > 0) {
+        resultHTML += `
+          <div class="summary-item receive">
+            <span><i class="fas fa-arrow-down"></i> ${originalName} should RECEIVE</span>
+            <span><strong>₱${balance.toFixed(2)}</strong></span>
+          </div>`;
+      } else if (balance < 0) {
+        resultHTML += `
+          <div class="summary-item pay">
+            <span><i class="fas fa-arrow-up"></i> ${originalName} should PAY</span>
+            <span><strong>₱${Math.abs(balance).toFixed(2)}</strong></span>
+          </div>`;
+      } else {
+        resultHTML += `
+          <div class="summary-item settled">
+            <span><i class="fas fa-check-circle"></i> ${originalName}</span>
+            <span><strong>All settled</strong></span>
+          </div>`;
+      }
+    }
+
+    resultDiv.innerHTML = resultHTML;
+
+    // Calculate and display transactions
+    const transactions = calculateTransactions(netBalances);
+    
+    if (transactions.length > 0) {
+      transactionsDiv.style.display = 'block';
+      let transactionsHTML = '';
+      
+      transactions.forEach(t => {
+        transactionsHTML += `
+          <div class="transaction-item">
+            <div>
+              <span class="transaction-from">${t.from}</span>
+              <span class="transaction-arrow"><i class="fas fa-arrow-right"></i></span>
+              <span class="transaction-to">${t.to}</span>
+            </div>
+            <div class="transaction-amount">₱${t.amount.toFixed(2)}</div>
+          </div>`;
+      });
+      
+      transactionsList.innerHTML = transactionsHTML;
+    } else {
+      transactionsDiv.style.display = 'none';
+    }
+    
+    // Update the chart
+    updateChart();
+  }
+
+  // Delete specific expense
+  function deleteExpense(index) {
+    if (confirm(`Are you sure you want to delete this expense?`)) {
+      expenses.splice(index, 1);
+      showNotification('Expense deleted successfully!');
+      updateDisplay();
+    }
+  }
+
+  // Reset all data
+  function resetAll() {
+    if (confirm("Are you sure you want to clear all data?")) {
+      expenses = [];
+      personColors = {};
+      nameCaseMap = {};
+      editingIndex = null;
+      document.querySelector('.input-group button').innerHTML = '<i class="fas fa-plus"></i> Add';
+      
+      // Destroy chart if it exists
+      if (expenseChart) {
+        expenseChart.destroy();
+        expenseChart = null;
+      }
+      
+      updateDisplay();
+      showNotification('All data has been reset!');
+    }
+  }
+
+  // Allow adding expense with Enter key
+  document.getElementById('description').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+      addExpense();
+    }
+  });
+
+  // Initial display
+  updateDisplay();
+</script>
+
+</body>
+</html>
